@@ -37,6 +37,7 @@ const client = new MongoClient(uri, {
 
 const database = client.db("blogDB");
 const blogCollection = database.collection("allBlogs");
+const wishlistCollection = database.collection("wishlist")
 
 // retrieves all blogs
 app.get("/allblogs", async (req, res) => {
@@ -86,6 +87,42 @@ app.post("/addblog", async (req, res) => {
     console.log(error);
   }
 });
+
+// retrieving blogs from the wishlist
+app.get("/wishlist", async(req, res) => {
+    try {
+        const query = {};
+        const cursor = wishlistCollection.find(query);
+        const result = await cursor.toArray();
+        res.send(result);
+       } catch (error) {
+         console.log(error);
+       }
+})
+// removing blogs from the wishlist
+app.delete("/wishlist/:id", async (req, res) => {
+    try {
+        const id = req.params.id;
+        const email = req.body.email;
+        console.log(id, email)
+        const query = {blogId: id, userEmail: email};
+        const result = await wishlistCollection.deleteOne(query);
+        res.send(result);
+       } catch (error) {
+         console.log(error);
+       }
+})
+
+// adding blog to the wishlist 
+app.post("/wishlist", async(req, res)=> {
+    try {
+       const newWish = req.body;
+       const result = await wishlistCollection.insertOne(newWish);
+       res.send(result);
+      } catch (error) {
+        console.log(error);
+      }
+})
 
 // update blog by user
 app.put("/updateblog/:id", async (req, res) => {
