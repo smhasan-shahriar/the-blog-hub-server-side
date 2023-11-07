@@ -39,6 +39,7 @@ const database = client.db("blogDB");
 const blogCollection = database.collection("allBlogs");
 const wishlistCollection = database.collection("wishlist");
 const userCollection = database.collection("users");
+const commentCollection = database.collection("comments")
 
 // retrieves all blogs
 app.get("/allblogs", async (req, res) => {
@@ -180,6 +181,31 @@ app.put("/updateblog/:id", async (req, res) => {
     console.log(error);
   }
 });
+
+// adding comment to the database
+app.post("/comments", async (req, res) => {
+  try {
+    const newComment = req.body;
+    const result = await commentCollection.insertOne(newComment);
+    res.send(result);
+  } catch (error) {
+    console.log(error);
+  }
+})
+//getting comments from the database
+app.get("/comments/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const query = { blogId: id};
+    const cursor = commentCollection.find(query);
+    const result = await cursor.toArray();
+    res.send(result);
+  } catch (error) {
+    console.log(error);
+  }
+})
+
+
 
 app.get("/", (req, res) => {
   res.send("server connected");
