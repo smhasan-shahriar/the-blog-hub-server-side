@@ -37,7 +37,8 @@ const client = new MongoClient(uri, {
 
 const database = client.db("blogDB");
 const blogCollection = database.collection("allBlogs");
-const wishlistCollection = database.collection("wishlist")
+const wishlistCollection = database.collection("wishlist");
+const userCollection = database.collection("users");
 
 // retrieves all blogs
 app.get("/allblogs", async (req, res) => {
@@ -67,11 +68,11 @@ app.get("/recentblogs", async (req, res) => {
   try {
     const query = {};
     const options = {
-        sort: {time: -1}
+      sort: { time: -1 },
     };
-    const cursor = blogCollection.find(query,options);
+    const cursor = blogCollection.find(query, options);
     const result = (await cursor.toArray()).slice(0, 6);
-    res.send(result)
+    res.send(result);
   } catch (error) {
     console.log(error);
   }
@@ -88,41 +89,75 @@ app.post("/addblog", async (req, res) => {
   }
 });
 
+// retrieving blogs for featured list
+app.get("/featured", async (req, res) => {
+  try {
+    const query = {};
+    const cursor = blogCollection.find(query);
+    const result = await cursor.toArray();
+    const sortedArray = result.sort((a, b) => b.long.length - a.long.length);
+    res.send(sortedArray.slice(0, 10));
+  } catch (error) {
+    console.log(error);
+  }
+});
+
 // retrieving blogs from the wishlist
-app.get("/wishlist", async(req, res) => {
-    try {
-        const query = {};
-        const cursor = wishlistCollection.find(query);
-        const result = await cursor.toArray();
-        res.send(result);
-       } catch (error) {
-         console.log(error);
-       }
-})
+app.get("/wishlist", async (req, res) => {
+  try {
+    const query = {};
+    const cursor = wishlistCollection.find(query);
+    const result = await cursor.toArray();
+    res.send(result);
+  } catch (error) {
+    console.log(error);
+  }
+});
 // removing blogs from the wishlist
 app.delete("/wishlist/:id", async (req, res) => {
-    try {
-        const id = req.params.id;
-        const email = req.body.email;
-        console.log(id, email)
-        const query = {blogId: id, userEmail: email};
-        const result = await wishlistCollection.deleteOne(query);
-        res.send(result);
-       } catch (error) {
-         console.log(error);
-       }
-})
+  try {
+    const id = req.params.id;
+    const email = req.body.email;
+    console.log(id, email);
+    const query = { blogId: id, userEmail: email };
+    const result = await wishlistCollection.deleteOne(query);
+    res.send(result);
+  } catch (error) {
+    console.log(error);
+  }
+});
 
-// adding blog to the wishlist 
-app.post("/wishlist", async(req, res)=> {
-    try {
-       const newWish = req.body;
-       const result = await wishlistCollection.insertOne(newWish);
-       res.send(result);
-      } catch (error) {
-        console.log(error);
-      }
-})
+// adding user to the database
+app.get("/users", async (req, res) => {
+  try {
+    const query = {};
+    const cursor = userCollection.find(query);
+    const result = await cursor.toArray();
+    res.send(result);
+  } catch (error) {
+    console.log(error);
+  }
+});
+app.post("/users", async (req, res) => {
+  try {
+    const newUser = req.body;
+    const result = await userCollection.insertOne(newUser);
+    res.send(result);
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+// adding blog to the wishlist
+app.post("/wishlist", async (req, res) => {
+  try {
+    const newWish = req.body;
+    const result = await wishlistCollection.insertOne(newWish);
+    res.send(result);
+  } catch (error) {
+    console.log(error);
+  }
+});
 
 // update blog by user
 app.put("/updateblog/:id", async (req, res) => {
