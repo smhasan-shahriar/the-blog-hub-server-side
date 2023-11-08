@@ -153,7 +153,7 @@ app.get("/featured", async (req, res) => {
   }
 });
 
-// retrieving blogs from the wishlist
+// retrieving blogs from the wishlist query via email
 app.get("/wishlist", verifyToken, async (req, res) => {
   try {
     const email = req.query.email;
