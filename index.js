@@ -1,5 +1,7 @@
 const express = require("express");
 const cors = require("cors");
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const port = process.env.PORT || 5000;
@@ -7,8 +9,32 @@ const port = process.env.PORT || 5000;
 const app = express();
 
 // middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+      "http://localhost:5173",
+      
+  ],
+  credentials: true
+}));
 app.use(express.json());
+app.use(cookieParser());
+
+const verifyToken = (req, res, next) =>{
+  const token = req?.cookies?.token;
+  console.log('token in the middleware', token);
+
+  if(!token){
+      return res.status(401).send({message: 'unauthorized access'})
+  }
+  jwt.verify(token, process.env.TOKEN_SECRET, (err, decoded) =>{
+      if(err){
+          return res.status(401).send({message: 'unauthorized access'})
+      }
+      req.user = decoded;
+      next();
+  })
+}
+
 
 const uri = `mongodb+srv://${process.env.USER}:${process.env.PASS}@cluster0.rsv6fks.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -41,6 +67,22 @@ const wishlistCollection = database.collection("wishlist");
 const userCollection = database.collection("users");
 const commentCollection = database.collection("comments")
 
+app.post('/jwt', async (req, res) => {
+  const user = req.body;
+  console.log('user for token', user);
+  const token = jwt.sign(user, process.env.TOKEN_SECRET, { expiresIn: '1h' });
+  console.log(token)
+  res.cookie('token', token, {
+      httpOnly: true,
+      secure: false
+  })
+      .send({ success: true });
+})
+app.post('/logout', async (req, res) => {
+  const user = req.body;
+  console.log('logging out', user);
+  res.clearCookie('token', { maxAge: 0 }).send({ success: true })
+})
 // retrieves all blogs
 app.get("/allblogs", async (req, res) => {
   try {
@@ -53,7 +95,7 @@ app.get("/allblogs", async (req, res) => {
 });
 
 // retrieve single blog details
-app.get("/blogs/:id", async (req, res) => {
+app.get("/blogs/:id", verifyToken, async (req, res) => {
   try {
     const id = req.params.id;
     const query = { _id: new ObjectId(id) };
@@ -80,7 +122,7 @@ app.get("/recentblogs", async (req, res) => {
 });
 
 // adding new blog by users
-app.post("/addblog", async (req, res) => {
+app.post("/addblog", verifyToken, async (req, res) => {
   try {
     const newBlog = req.body;
     const result = await blogCollection.insertOne(newBlog);
