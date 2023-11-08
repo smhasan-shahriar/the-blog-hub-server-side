@@ -183,7 +183,6 @@ app.delete("/wishlist/:id", async (req, res) => {
   try {
     const id = req.params.id;
     const email = req.body.email;
-    console.log(id, email);
     const query = { blogId: id, userEmail: email };
     const result = await wishlistCollection.deleteOne(query);
     res.send(result);
