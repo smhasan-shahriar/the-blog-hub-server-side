@@ -19,9 +19,9 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
+// verify token middleware creation 
 const verifyToken = (req, res, next) =>{
   const token = req?.cookies?.token;
-  console.log('token in the middleware', token);
 
   if(!token){
       return res.status(401).send({message: 'unauthorized access'})
@@ -47,42 +47,31 @@ const client = new MongoClient(uri, {
   },
 });
 
-// async function run() {
-//   try {
-//     // Connect the client to the server	(optional starting in v4.7)
-//     await client.connect();
-//     // Send a ping to confirm a successful connection
-//     await client.db("admin").command({ ping: 1 });
-//     console.log("Pinged your deployment. You successfully connected to MongoDB!");
-//   } finally {
-//     // Ensures that the client will close when you finish/error
-//     await client.close();
-//   }
-// }
-// run().catch(console.dir);
-
+//database collection creation
 const database = client.db("blogDB");
 const blogCollection = database.collection("allBlogs");
 const wishlistCollection = database.collection("wishlist");
 const userCollection = database.collection("users");
 const commentCollection = database.collection("comments")
 
+// json web token creation 
+
 app.post('/jwt', async (req, res) => {
   const user = req.body;
-  console.log('user for token', user);
   const token = jwt.sign(user, process.env.TOKEN_SECRET, { expiresIn: '1h' });
-  console.log(token)
   res.cookie('token', token, {
       httpOnly: true,
       secure: false
   })
       .send({ success: true });
 })
+
+// clearing cookies when user logs out
 app.post('/logout', async (req, res) => {
   const user = req.body;
-  console.log('logging out', user);
   res.clearCookie('token', { maxAge: 0 }).send({ success: true })
 })
+
 // retrieves all blogs
 app.get("/allblogs", async (req, res) => {
   try {
@@ -146,7 +135,7 @@ app.get("/featured", async (req, res) => {
 });
 
 // retrieving blogs from the wishlist
-app.get("/wishlist", async (req, res) => {
+app.get("/wishlist", verifyToken, async (req, res) => {
   try {
     const query = {};
     const cursor = wishlistCollection.find(query);
